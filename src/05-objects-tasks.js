@@ -20,8 +20,15 @@
  *    console.log(r.height);      // => 20
  *    console.log(r.getArea());   // => 200
  */
-function Rectangle(/* width, height */) {
-  throw new Error('Not implemented');
+function Rectangle(width, height) {
+  const rectangle = {
+    width,
+    height,
+    getArea() {
+      return width * height;
+    },
+  };
+  return rectangle;
 }
 
 
@@ -35,8 +42,8 @@ function Rectangle(/* width, height */) {
  *    [1,2,3]   =>  '[1,2,3]'
  *    { width: 10, height : 20 } => '{"height":10,"width":20}'
  */
-function getJSON(/* obj */) {
-  throw new Error('Not implemented');
+function getJSON(obj) {
+  return JSON.stringify(obj);
 }
 
 
@@ -51,8 +58,10 @@ function getJSON(/* obj */) {
  *    const r = fromJSON(Circle.prototype, '{"radius":10}');
  *
  */
-function fromJSON(/* proto, json */) {
-  throw new Error('Not implemented');
+function fromJSON(proto, json) {
+  const obj = JSON.parse(json);
+  const values = Object.values(obj);
+  return new proto.constructor(...values);
 }
 
 
@@ -110,33 +119,142 @@ function fromJSON(/* proto, json */) {
  *  For more examples see unit tests.
  */
 
+
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  Selector: function Selector() {
+    this.element = (value) => {
+      if (this.refElement) {
+        throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+      }
+      if (this.refId
+        || this.refClass
+        || this.refAttr
+        || this.refPseudoClass
+        || this.refPseudoElement) {
+        throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+      }
+      this.refElement = value;
+      return this;
+    };
+
+    this.id = (value) => {
+      if (this.refId) {
+        throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+      }
+      if (this.refClass || this.refAttr || this.refPseudoClass || this.refPseudoElement) {
+        throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+      }
+      this.refId = value;
+      return this;
+    };
+
+    this.class = (value) => {
+      if (this.refAttr || this.refPseudoClass || this.refPseudoElement) {
+        throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+      }
+      if (this.refClass) {
+        this.refClass = [...this.refClass, value];
+      } else {
+        this.refClass = [value];
+      }
+      return this;
+    };
+
+    this.attr = (value) => {
+      if (this.refPseudoClass || this.refPseudoElement) {
+        throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+      }
+      if (this.refAttr) {
+        this.refAttr = [...this.refAttr, value];
+      } else {
+        this.refAttr = [value];
+      }
+      return this;
+    };
+
+    this.pseudoClass = (value) => {
+      if (this.refPseudoElement) {
+        throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+      }
+      if (this.refPseudoClass) {
+        this.refPseudoClass = [...this.refPseudoClass, value];
+      } else {
+        this.refPseudoClass = [value];
+      }
+      return this;
+    };
+
+    this.pseudoElement = (value) => {
+      if (this.refPseudoElement) {
+        throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+      }
+      this.refPseudoElement = value;
+      return this;
+    };
+
+    this.stringify = () => {
+      let result = '';
+      if (this.refElement) {
+        result += this.refElement;
+      }
+      if (this.refId) {
+        result += `#${this.refId}`;
+      }
+      if (this.refClass) {
+        result += this.refClass.map((element) => `.${element}`).join('');
+      }
+      if (this.refAttr) {
+        result += this.refAttr.map((element) => `[${element}]`).join('');
+      }
+      if (this.refPseudoClass) {
+        result += this.refPseudoClass.map((element) => `:${element}`).join('');
+      }
+      if (this.refPseudoElement) {
+        result += `::${this.refPseudoElement}`;
+      }
+      return result;
+    };
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  CombinedSelector: function CombinedSelector(selector1, combinator, selector2) {
+    this.refSelector1 = selector1;
+    this.refCombinator = combinator;
+    this.refSelector2 = selector2;
+
+    this.stringify = () => {
+      const result = `${this.refSelector1.stringify()} ${
+        this.refCombinator
+      } ${this.refSelector2.stringify()}`;
+      return result;
+    };
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    return new this.Selector().element(value);
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    return new this.Selector().id(value);
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    return new this.Selector().class(value);
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    return new this.Selector().attr(value);
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    return new this.Selector().pseudoClass(value);
+  },
+
+  pseudoElement(value) {
+    return new this.Selector().pseudoElement(value);
+  },
+
+  combine(selector1, combinator, selector2) {
+    return new this.CombinedSelector(selector1, combinator, selector2);
   },
 };
 
